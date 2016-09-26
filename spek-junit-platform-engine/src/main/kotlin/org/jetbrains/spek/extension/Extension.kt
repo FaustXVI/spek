@@ -7,4 +7,5 @@ import org.jetbrains.spek.meta.Experimental
  */
 @Experimental
 interface Extension {
+    fun init(annotations: Array<Annotation>)
 }
