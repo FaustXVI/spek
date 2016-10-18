@@ -70,7 +70,7 @@ class ExtensionTest: AbstractSpekTestEngineTest() {
             test("SimpleExtension should be present") {
                 assertThat(
                     (this as SpekTestEngine.Collector)
-                        .registry.getExtension(SpekSimpleExtension::class), present(anything)
+                        .extensionRegistry.getExtension(SpekSimpleExtension::class), present(anything)
                 )
             }
         })
@@ -87,7 +87,7 @@ class ExtensionTest: AbstractSpekTestEngineTest() {
             test("SimpleExtension should be present") {
                 assertThat(
                     (this as SpekTestEngine.Collector)
-                        .registry.getExtension(SpekSimpleExtension::class), present(anything)
+                        .extensionRegistry.getExtension(SpekSimpleExtension::class), present(anything)
                 )
             }
         })

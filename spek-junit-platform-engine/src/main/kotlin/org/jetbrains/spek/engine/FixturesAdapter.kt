@@ -3,7 +3,8 @@ package org.jetbrains.spek.engine
 import org.jetbrains.spek.extension.Extension
 import org.jetbrains.spek.extension.GroupExtensionContext
 import org.jetbrains.spek.extension.TestExtensionContext
-import java.util.*
+import java.util.LinkedList
+import java.util.WeakHashMap
 
 /**
  * Adapter for fixtures as a pseudo-extension.
@@ -12,7 +13,12 @@ import java.util.*
  */
 class FixturesAdapter: Extension {
     private val beforeEach: MutableMap<GroupExtensionContext, MutableList<() -> Unit>> = WeakHashMap()
+
     private val afterEach: MutableMap<GroupExtensionContext, MutableList<() -> Unit>> = WeakHashMap()
+
+    override fun init(annotations: Array<Annotation>) {
+        TODO()
+    }
 
     fun beforeExecuteTest(test: TestExtensionContext) {
         invokeAllBeforeEach(test.parent)
