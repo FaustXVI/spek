@@ -5,11 +5,17 @@ import org.jetbrains.spek.engine.extension.ExtensionRegistryImpl
 import org.jetbrains.spek.extension.ExtensionContext
 import org.jetbrains.spek.extension.GroupExtensionContext
 import org.jetbrains.spek.extension.TestExtensionContext
-import org.jetbrains.spek.extension.execution.*
+import org.jetbrains.spek.extension.execution.AfterExecuteGroup
+import org.jetbrains.spek.extension.execution.AfterExecuteSpec
+import org.jetbrains.spek.extension.execution.AfterExecuteTest
+import org.jetbrains.spek.extension.execution.BeforeExecuteGroup
+import org.jetbrains.spek.extension.execution.BeforeExecuteSpec
+import org.jetbrains.spek.extension.execution.BeforeExecuteTest
 import org.junit.platform.engine.TestSource
 import org.junit.platform.engine.UniqueId
 import org.junit.platform.engine.support.descriptor.AbstractTestDescriptor
 import org.junit.platform.engine.support.hierarchical.Node
+import kotlin.reflect.KClass
 
 /**
  * @author Ranie Jade Ramiso
@@ -91,9 +97,15 @@ sealed class Scope(uniqueId: UniqueId, val pending: Pending, val source: TestSou
         }
     }
 
-    class Spec(uniqueId: UniqueId, source: TestSource?, val registry: ExtensionRegistryImpl, val nested: Boolean)
+    class Spec(uniqueId: UniqueId, source: TestSource?, val registry: ExtensionRegistryImpl,
+               val spec: KClass<*>, val nested: Boolean)
         : Group(uniqueId, Pending.No, source, false, {}) {
         override fun prepare(context: SpekExecutionContext): SpekExecutionContext {
+            registry.extensions().forEach {
+                // TODO: should we catch exception or just let it bubble up?
+                it.init(spec)
+            }
+
             return SpekExecutionContext(registry, context.executionRequest)
         }
 

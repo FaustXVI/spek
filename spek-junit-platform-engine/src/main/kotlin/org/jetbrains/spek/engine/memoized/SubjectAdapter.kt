@@ -6,6 +6,7 @@ import org.jetbrains.spek.extension.TestExtensionContext
 import org.jetbrains.spek.extension.execution.AfterExecuteGroup
 import org.jetbrains.spek.extension.execution.AfterExecuteTest
 import java.util.WeakHashMap
+import kotlin.reflect.KClass
 
 /**
  * Adapter for [subjects][Subject] as a pseudo-extension.
@@ -15,8 +16,7 @@ import java.util.WeakHashMap
 class SubjectAdapter: AfterExecuteGroup, AfterExecuteTest {
     private val subjectMap: MutableMap<GroupExtensionContext, SubjectImpl<*>> = WeakHashMap()
 
-    override fun init(annotations: Array<Annotation>) {
-
+    override fun init(spec: KClass<*>) {
     }
 
     override fun afterExecuteGroup(group: GroupExtensionContext) {

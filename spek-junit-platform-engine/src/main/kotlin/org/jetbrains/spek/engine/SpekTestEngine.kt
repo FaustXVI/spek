@@ -98,10 +98,11 @@ class SpekTestEngine: HierarchicalTestEngine<SpekExecutionContext>() {
             registerExtension(SubjectAdapter())
         }
 
-        getSpekExtensions(klass.kotlin)
+        val kotlinClass = klass.kotlin
+        getSpekExtensions(kotlinClass)
             .forEach { registry.registerExtension(it) }
 
-        val instance = klass.kotlin.primaryConstructor!!.call()
+        val instance = kotlinClass.primaryConstructor!!.call()
         val root = Scope.Spec(
             engineDescriptor.uniqueId.append(SPEC_SEGMENT_TYPE, klass.name),
             ClassSource(klass), registry, false

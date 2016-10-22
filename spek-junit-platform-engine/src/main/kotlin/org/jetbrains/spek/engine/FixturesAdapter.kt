@@ -5,6 +5,7 @@ import org.jetbrains.spek.extension.GroupExtensionContext
 import org.jetbrains.spek.extension.TestExtensionContext
 import java.util.LinkedList
 import java.util.WeakHashMap
+import kotlin.reflect.KClass
 
 /**
  * Adapter for fixtures as a pseudo-extension.
@@ -16,8 +17,7 @@ class FixturesAdapter: Extension {
 
     private val afterEach: MutableMap<GroupExtensionContext, MutableList<() -> Unit>> = WeakHashMap()
 
-    override fun init(annotations: Array<Annotation>) {
-        TODO()
+    override fun init(spec: KClass<*>) {
     }
 
     fun beforeExecuteTest(test: TestExtensionContext) {

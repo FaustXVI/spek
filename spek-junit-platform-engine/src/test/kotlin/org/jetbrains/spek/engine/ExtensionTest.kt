@@ -10,19 +10,28 @@ import org.jetbrains.spek.engine.support.AbstractSpekTestEngineTest
 import org.jetbrains.spek.extension.GroupExtensionContext
 import org.jetbrains.spek.extension.SpekExtension
 import org.jetbrains.spek.extension.TestExtensionContext
-import org.jetbrains.spek.extension.execution.*
+import org.jetbrains.spek.extension.execution.AfterExecuteGroup
+import org.jetbrains.spek.extension.execution.AfterExecuteSpec
+import org.jetbrains.spek.extension.execution.AfterExecuteTest
+import org.jetbrains.spek.extension.execution.BeforeExecuteGroup
+import org.jetbrains.spek.extension.execution.BeforeExecuteSpec
+import org.jetbrains.spek.extension.execution.BeforeExecuteTest
 import org.junit.jupiter.api.Test
-import org.junit.platform.runner.JUnitPlatform
-import org.junit.runner.RunWith
+import kotlin.reflect.KClass
 
 /**
  * @author Ranie Jade Ramiso
  */
-@RunWith(JUnitPlatform::class)
 class ExtensionTest: AbstractSpekTestEngineTest() {
     class SpekSimpleExtension
         : BeforeExecuteTest, AfterExecuteTest,
           BeforeExecuteGroup, AfterExecuteGroup, BeforeExecuteSpec, AfterExecuteSpec {
+        lateinit var applied: KClass<*>
+
+        override fun init(spec: KClass<*>) {
+            applied = spec
+        }
+
         override fun beforeExecuteSpec(spec: GroupExtensionContext) {
             builder.appendln("${"    ".repeat(indent)}beforeExecuteSpec")
             indent++
@@ -67,11 +76,16 @@ class ExtensionTest: AbstractSpekTestEngineTest() {
     fun testDiscoveryCustomAnnotation() {
         @SimpleExtension
         class SomeSpek: Spek({
+            val extensionRegistry = (this as SpekTestEngine.Collector)
+                .extensionRegistry
             test("SimpleExtension should be present") {
+                val extension = extensionRegistry.getExtension(SpekSimpleExtension::class)
                 assertThat(
-                    (this as SpekTestEngine.Collector)
-                        .extensionRegistry.getExtension(SpekSimpleExtension::class), present(anything)
+                    extension, present(anything)
                 )
+
+                val klass: KClass<*> = SomeSpek::class
+                assertThat(extension!!.applied, equalTo(klass))
             }
         })
 
@@ -84,11 +98,16 @@ class ExtensionTest: AbstractSpekTestEngineTest() {
     fun testDiscovery() {
         @SpekExtension(SpekSimpleExtension::class)
         class SomeSpek: Spek({
+            val extensionRegistry = (this as SpekTestEngine.Collector)
+                .extensionRegistry
             test("SimpleExtension should be present") {
+                val extension = extensionRegistry.getExtension(SpekSimpleExtension::class)
                 assertThat(
-                    (this as SpekTestEngine.Collector)
-                        .extensionRegistry.getExtension(SpekSimpleExtension::class), present(anything)
+                    extension, present(anything)
                 )
+
+                val klass: KClass<*> = SomeSpek::class
+                assertThat(extension!!.applied, equalTo(klass))
             }
         })
 
