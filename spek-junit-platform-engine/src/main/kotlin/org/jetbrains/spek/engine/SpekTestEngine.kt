@@ -19,8 +19,10 @@ import org.junit.platform.engine.TestDescriptor
 import org.junit.platform.engine.TestSource
 import org.junit.platform.engine.UniqueId
 import org.junit.platform.engine.discovery.ClassSelector
+import org.junit.platform.engine.discovery.ClasspathRootSelector
 import org.junit.platform.engine.discovery.PackageSelector
 import org.junit.platform.engine.discovery.UniqueIdSelector
+import org.junit.platform.engine.support.descriptor.ClassSource
 import org.junit.platform.engine.support.descriptor.EngineDescriptor
 import org.junit.platform.engine.support.hierarchical.HierarchicalTestEngine
 import java.nio.file.Paths
@@ -105,7 +107,7 @@ class SpekTestEngine: HierarchicalTestEngine<SpekExecutionContext>() {
         val instance = kotlinClass.primaryConstructor!!.call()
         val root = Scope.Spec(
             engineDescriptor.uniqueId.append(SPEC_SEGMENT_TYPE, klass.name),
-            ClassSource(klass), registry, false
+            ClassSource(klass), registry, kotlinClass, false
         )
         engineDescriptor.addChild(root)
 
@@ -205,7 +207,7 @@ class SpekTestEngine: HierarchicalTestEngine<SpekExecutionContext>() {
 
             val scope = Scope.Spec(
                 root.uniqueId.append(SPEC_SEGMENT_TYPE, spec.java.name),
-                ClassSource(spec.java), nestedRegistry, true
+                ClassSource(spec.java), nestedRegistry, spec, true
             )
             root.addChild(scope)
             instance.spec.invoke(NestedSubjectCollector(scope, nestedRegistry, this as SubjectCollector<T>))
