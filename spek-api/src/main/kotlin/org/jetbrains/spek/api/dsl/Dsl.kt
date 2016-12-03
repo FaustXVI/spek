@@ -1,13 +1,14 @@
 package org.jetbrains.spek.api.dsl
 
-import org.jetbrains.spek.extension.ExtensionRegistry
+import org.jetbrains.spek.meta.SpekDsl
 
 /**
  * @author Ranie Jade Ramiso
  * @since 1.0
  */
+@SpekDsl
 interface Dsl {
-    val extensionRegistry: ExtensionRegistry
+//    val extensionRegistry: ExtensionRegistry
 
     fun group(description: String, pending: Pending = Pending.No, lazy: Boolean = false, body: Dsl.() -> Unit)
     fun test(description: String, pending: Pending = Pending.No, body: () -> Unit)

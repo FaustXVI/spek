@@ -1,4 +1,4 @@
-package org.jetbrains.spek.engine.memoized
+package org.jetbrains.spek.engine.subject
 
 import com.natpryce.hamkrest.assertion.assertThat
 import com.natpryce.hamkrest.equalTo

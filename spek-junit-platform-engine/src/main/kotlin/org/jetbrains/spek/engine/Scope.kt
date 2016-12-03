@@ -1,27 +1,21 @@
 package org.jetbrains.spek.engine
 
 import org.jetbrains.spek.api.dsl.Pending
-import org.jetbrains.spek.engine.extension.ExtensionRegistryImpl
-import org.jetbrains.spek.extension.ExtensionContext
-import org.jetbrains.spek.extension.GroupExtensionContext
-import org.jetbrains.spek.extension.TestExtensionContext
-import org.jetbrains.spek.extension.execution.AfterExecuteGroup
-import org.jetbrains.spek.extension.execution.AfterExecuteSpec
-import org.jetbrains.spek.extension.execution.AfterExecuteTest
-import org.jetbrains.spek.extension.execution.BeforeExecuteGroup
-import org.jetbrains.spek.extension.execution.BeforeExecuteSpec
-import org.jetbrains.spek.extension.execution.BeforeExecuteTest
+import org.jetbrains.spek.api.lifecycle.GroupScope
+import org.jetbrains.spek.api.lifecycle.TestScope
+import org.jetbrains.spek.engine.lifecycle.LifecycleManager
 import org.junit.platform.engine.TestSource
 import org.junit.platform.engine.UniqueId
 import org.junit.platform.engine.support.descriptor.AbstractTestDescriptor
 import org.junit.platform.engine.support.hierarchical.Node
-import kotlin.reflect.KClass
 
 /**
  * @author Ranie Jade Ramiso
  */
-sealed class Scope(uniqueId: UniqueId, val pending: Pending, val source: TestSource?)
-    : AbstractTestDescriptor(uniqueId, uniqueId.segments.last().value), Node<SpekExecutionContext>, ExtensionContext {
+sealed class Scope(uniqueId: UniqueId, val pending: Pending, val source: TestSource?,
+                   val lifecycleManager: LifecycleManager)
+    : AbstractTestDescriptor(uniqueId, uniqueId.segments.last().value), Node<SpekExecutionContext>,
+      org.jetbrains.spek.api.lifecycle.Scope {
 
     init {
         if (source != null) {
@@ -32,11 +26,12 @@ sealed class Scope(uniqueId: UniqueId, val pending: Pending, val source: TestSou
     open class Group(uniqueId: UniqueId, pending: Pending,
                      source: TestSource?,
                      override val lazy: Boolean,
+                     lifecycleManager: LifecycleManager,
                      val body: Group.(SpekExecutionContext) -> Unit)
-        : Scope(uniqueId, pending, source), GroupExtensionContext {
-        override val parent: GroupExtensionContext? by lazy {
+        : Scope(uniqueId, pending, source, lifecycleManager), GroupScope {
+        override val parent: GroupScope? by lazy {
             return@lazy if (getParent().isPresent) {
-                getParent().get() as GroupExtensionContext
+                getParent().get() as GroupScope
             } else {
                 null
             }
@@ -54,110 +49,88 @@ sealed class Scope(uniqueId: UniqueId, val pending: Pending, val source: TestSou
         }
 
         override fun before(context: SpekExecutionContext): SpekExecutionContext {
-            return super.before(context).apply {
-                context.registry.extensions()
-                    .filterIsInstance(BeforeExecuteGroup::class.java)
-                    .forEach { it.beforeExecuteGroup(this@Group) }
-            }
+            lifecycleManager.beforeExecuteGroup(this@Group)
+            return context
+//            return super.before(context).apply {
+//                context.registry.extensions()
+//                    .filterIsInstance(BeforeExecuteGroup::class.java)
+//                    .forEach { it.beforeExecuteGroup(this@Group) }
+//
+//            }
         }
 
         override fun execute(context: SpekExecutionContext): SpekExecutionContext {
             val collector = ThrowableCollector()
 
-            if (lazy) {
-                context.registry.extensions()
-                    .filterIsInstance(FixturesAdapter::class.java)
-                    .forEach {
-                        collector.executeSafely { it.beforeExecuteGroup(this) }
-                    }
-            }
+//            if (lazy) {
+//                context.registry.extensions()
+//                    .filterIsInstance(FixturesAdapter::class.java)
+//                    .forEach {
+//                        collector.executeSafely { it.beforeExecuteGroup(this) }
+//                    }
+//            }
 
             if (collector.isEmpty()) {
                 collector.executeSafely { body.invoke(this, context) }
             }
 
-            if (lazy) {
-                context.registry.extensions()
-                    .filterIsInstance(FixturesAdapter::class.java)
-                    .forEach {
-                        collector.executeSafely { it.afterExecuteGroup(this) }
-                    }
-            }
+//            if (lazy) {
+//                context.registry.extensions()
+//                    .filterIsInstance(FixturesAdapter::class.java)
+//                    .forEach {
+//                        collector.executeSafely { it.afterExecuteGroup(this) }
+//                    }
+//            }
 
             collector.assertEmpty()
             return context
         }
 
         override fun after(context: SpekExecutionContext) {
-            context.registry.extensions()
-                .filterIsInstance(AfterExecuteGroup::class.java)
-                .forEach { it.afterExecuteGroup(this@Group) }
+//            context.registry.extensions()
+//                .filterIsInstance(AfterExecuteGroup::class.java)
+//                .forEach { it.afterExecuteGroup(this@Group) }
 
-            super.after(context)
+            lifecycleManager.afterExecuteGroup(this@Group)
         }
     }
 
-    class Spec(uniqueId: UniqueId, source: TestSource?, val registry: ExtensionRegistryImpl,
-               val spec: KClass<*>, val nested: Boolean)
-        : Group(uniqueId, Pending.No, source, false, {}) {
-        override fun prepare(context: SpekExecutionContext): SpekExecutionContext {
-            registry.extensions().forEach {
-                // TODO: should we catch exception or just let it bubble up?
-                it.init(spec)
-            }
-
-            return SpekExecutionContext(registry, context.executionRequest)
-        }
-
-        override fun before(context: SpekExecutionContext): SpekExecutionContext {
-            if (!nested) {
-                context.registry.extensions()
-                    .filterIsInstance(BeforeExecuteSpec::class.java)
-                    .forEach { it.beforeExecuteSpec(this@Spec) }
-            } else {
-                return super.before(context)
-            }
-            return context
-        }
-
-        override fun after(context: SpekExecutionContext) {
-            if (!nested) {
-                context.registry.extensions()
-                    .filterIsInstance(AfterExecuteSpec::class.java)
-                    .forEach { it.afterExecuteSpec(this@Spec) }
-            } else {
-                super.after(context)
-            }
-        }
-    }
-
-    class Test(uniqueId: UniqueId, pending: Pending, source: TestSource?, val body: () -> Unit)
-        : Scope(uniqueId, pending, source), TestExtensionContext {
-        override val parent: GroupExtensionContext by lazy {
-            getParent().get() as GroupExtensionContext
+    class Test(uniqueId: UniqueId, pending: Pending, source: TestSource?, lifecycleManager: LifecycleManager, val body: () -> Unit)
+        : Scope(uniqueId, pending, source, lifecycleManager), TestScope {
+        override val parent: GroupScope by lazy {
+            getParent().get() as GroupScope
         }
 
         override fun isTest() = true
         override fun isContainer() = false
         override fun isLeaf() = true
 
+        override fun before(context: SpekExecutionContext): SpekExecutionContext {
+            lifecycleManager.beforeExecuteTest(this)
+            return context
+        }
+
+        override fun after(context: SpekExecutionContext) {
+            lifecycleManager.afterExecuteTest(this)
+        }
+
         override fun execute(context: SpekExecutionContext): SpekExecutionContext {
             val collector = ThrowableCollector()
 
-            context.registry.extensions()
-                .filterIsInstance(BeforeExecuteTest::class.java)
-                .forEach {
-                    collector.executeSafely { it.beforeExecuteTest(this@Test) }
-                }
+//            context.registry.extensions()
+//                .filterIsInstance(BeforeExecuteTest::class.java)
+//                .forEach {
+//                    collector.executeSafely { it.beforeExecuteTest(this@Test) }
+//                }
 
             if (collector.isEmpty()) {
-                if (!parent.lazy) {
-                    context.registry.extensions()
-                        .filterIsInstance(FixturesAdapter::class.java)
-                        .forEach {
-                            collector.executeSafely { it.beforeExecuteTest(this@Test) }
-                        }
-                }
+//                if (!parent.lazy) {
+//                    context.registry.extensions()
+//                        .filterIsInstance(FixturesAdapter::class.java)
+//                        .forEach {
+//                            collector.executeSafely { it.beforeExecuteTest(this@Test) }
+//                        }
+//                }
 
                 if (collector.isEmpty()) {
                     collector.executeSafely { body.invoke() }
@@ -165,19 +138,19 @@ sealed class Scope(uniqueId: UniqueId, val pending: Pending, val source: TestSou
             }
 
 
-            if (!parent.lazy) {
-                context.registry.extensions()
-                    .filterIsInstance(FixturesAdapter::class.java)
-                    .forEach {
-                        collector.executeSafely { it.afterExecuteTest(this@Test) }
-                    }
-            }
-
-            context.registry.extensions()
-                .filterIsInstance(AfterExecuteTest::class.java)
-                .forEach {
-                    collector.executeSafely { it.afterExecuteTest(this) }
-                }
+//            if (!parent.lazy) {
+//                context.registry.extensions()
+//                    .filterIsInstance(FixturesAdapter::class.java)
+//                    .forEach {
+//                        collector.executeSafely { it.afterExecuteTest(this@Test) }
+//                    }
+//            }
+//
+//            context.registry.extensions()
+//                .filterIsInstance(AfterExecuteTest::class.java)
+//                .forEach {
+//                    collector.executeSafely { it.afterExecuteTest(this) }
+//                }
 
             collector.assertEmpty()
 

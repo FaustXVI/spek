@@ -4,14 +4,13 @@ import org.jetbrains.spek.api.Spek
 import org.jetbrains.spek.api.SubjectSpek
 import org.jetbrains.spek.api.dsl.Dsl
 import org.jetbrains.spek.api.dsl.Pending
+import org.jetbrains.spek.api.dsl.RootDsl
 import org.jetbrains.spek.api.dsl.SubjectDsl
+import org.jetbrains.spek.api.lifecycle.LifecycleListener
 import org.jetbrains.spek.api.memoized.CachingMode
 import org.jetbrains.spek.api.memoized.Subject
-import org.jetbrains.spek.engine.extension.ExtensionRegistryImpl
-import org.jetbrains.spek.engine.memoized.SubjectAdapter
-import org.jetbrains.spek.engine.memoized.SubjectImpl
-import org.jetbrains.spek.extension.Extension
-import org.jetbrains.spek.extension.SpekExtension
+import org.jetbrains.spek.engine.lifecycle.LifecycleManager
+import org.jetbrains.spek.engine.subject.SubjectAdapter
 import org.junit.platform.commons.util.ReflectionUtils
 import org.junit.platform.engine.EngineDiscoveryRequest
 import org.junit.platform.engine.ExecutionRequest
@@ -29,7 +28,6 @@ import java.nio.file.Paths
 import java.util.LinkedList
 import java.util.function.Consumer
 import kotlin.reflect.KClass
-import kotlin.reflect.KProperty
 import kotlin.reflect.primaryConstructor
 
 /**
@@ -45,15 +43,13 @@ class SpekTestEngine: HierarchicalTestEngine<SpekExecutionContext>() {
     override fun getId(): String = "spek"
 
     override fun createExecutionContext(request: ExecutionRequest)
-        = SpekExecutionContext(ExtensionRegistryImpl(), request)
+        = SpekExecutionContext(request)
 
     private fun resolveSpecs(discoveryRequest: EngineDiscoveryRequest, engineDescriptor: EngineDescriptor) {
         val isSpec = java.util.function.Predicate<Class<*>> {
             Spek::class.java.isAssignableFrom(it) || SubjectSpek::class.java.isAssignableFrom(it)
         }
-        val isSpecClass = java.util.function.Predicate<String> { className ->
-            className.isNotEmpty()
-        }
+        val isSpecClass = java.util.function.Predicate<String>(String::isNotEmpty)
         discoveryRequest.getSelectorsByType(ClasspathRootSelector::class.java).forEach {
             ReflectionUtils.findAllClassesInClasspathRoot(Paths.get(it.classpathRoot), isSpec, isSpecClass).forEach {
                 resolveSpec(engineDescriptor, it)
@@ -95,68 +91,77 @@ class SpekTestEngine: HierarchicalTestEngine<SpekExecutionContext>() {
     }
 
     private fun resolveSpec(engineDescriptor: EngineDescriptor, klass: Class<*>) {
-        val registry = ExtensionRegistryImpl().apply {
-            registerExtension(FixturesAdapter())
-            registerExtension(SubjectAdapter())
-        }
+        val lifecycleManager = LifecycleManager()
 
         val kotlinClass = klass.kotlin
-        getSpekExtensions(kotlinClass)
-            .forEach { registry.registerExtension(it) }
-
         val instance = kotlinClass.primaryConstructor!!.call()
-        val root = Scope.Spec(
+        val root = Scope.Group(
             engineDescriptor.uniqueId.append(SPEC_SEGMENT_TYPE, klass.name),
-            ClassSource(klass), registry, kotlinClass, false
+            Pending.No,
+            ClassSource(klass), false, lifecycleManager, {}
         )
         engineDescriptor.addChild(root)
 
         when(instance) {
             is SubjectSpek<*> -> (instance as SubjectSpek<Any>).spec.invoke(
-                SubjectCollector<Any>(root, root.registry)
+                SubjectCollector<Any>(root, lifecycleManager)
             )
-            is Spek -> instance.spec.invoke(Collector(root, root.registry))
+            is Spek -> instance.spec.invoke(Collector(root, lifecycleManager))
         }
 
     }
 
-    open class Collector(val root: Scope.Group, override val extensionRegistry: ExtensionRegistryImpl): Dsl {
+    open class Collector(val root: Scope.Group,
+                         val lifecycleManager: LifecycleManager): RootDsl {
+
+        val fixtures = FixturesAdapter().apply {
+            lifecycleManager.addListener(this)
+        }
+
+        override fun registerListener(listener: LifecycleListener) {
+            lifecycleManager.addListener(listener)
+        }
+
         override fun group(description: String, pending: Pending, lazy: Boolean, body: Dsl.() -> Unit) {
             val action: Scope.Group.(SpekExecutionContext) -> Unit = if (lazy) {
                 {
-                    body.invoke(LazyGroupCollector(this, extensionRegistry, it))
+                    body.invoke(LazyGroupCollector(this, lifecycleManager, it))
                 }
             } else {
                 { }
             }
 
             val group = Scope.Group(
-                root.uniqueId.append(GROUP_SEGMENT_TYPE, description), pending, getSource(), lazy, action
+                root.uniqueId.append(GROUP_SEGMENT_TYPE, description),
+                pending, getSource(), lazy, lifecycleManager, action
             )
 
             root.addChild(group)
 
             if (!lazy) {
-                body.invoke(Collector(group, extensionRegistry))
+                body.invoke(Collector(group, lifecycleManager))
             }
         }
 
         override fun test(description: String, pending: Pending, body: () -> Unit) {
-            val test = Scope.Test(root.uniqueId.append(TEST_SEGMENT_TYPE, description), pending, getSource(), body)
+            val test = Scope.Test(
+                root.uniqueId.append(TEST_SEGMENT_TYPE, description),
+                pending, getSource(), lifecycleManager, body
+            )
             root.addChild(test)
         }
 
         override fun beforeEachTest(callback: () -> Unit) {
-            extensionRegistry.getExtension(FixturesAdapter::class)!!.registerBeforeEach(root, callback)
+            fixtures.registerBeforeEach(root, callback)
         }
 
         override fun afterEachTest(callback: () -> Unit) {
-            extensionRegistry.getExtension(FixturesAdapter::class)!!.registerAfterEach(root, callback)
+            fixtures.registerAfterEach(root, callback)
         }
     }
 
-    class LazyGroupCollector(root: Scope.Group, registry: ExtensionRegistryImpl,
-                             val context: SpekExecutionContext): Collector(root, registry) {
+    class LazyGroupCollector(root: Scope.Group, lifecycleManager: LifecycleManager,
+                             val context: SpekExecutionContext): Collector(root, lifecycleManager) {
         override fun group(description: String, pending: Pending, lazy: Boolean, body: Dsl.() -> Unit) {
             fail()
         }
@@ -170,7 +175,9 @@ class SpekTestEngine: HierarchicalTestEngine<SpekExecutionContext>() {
         }
 
         override fun test(description: String, pending: Pending, body: () -> Unit) {
-            val test = Scope.Test(root.uniqueId.append(TEST_SEGMENT_TYPE, description), pending, getSource(), body)
+            val test = Scope.Test(
+                root.uniqueId.append(TEST_SEGMENT_TYPE, description), pending, getSource(), lifecycleManager, body
+            )
             root.addChild(test)
             context.engineExecutionListener.dynamicTestRegistered(test)
         }
@@ -180,48 +187,46 @@ class SpekTestEngine: HierarchicalTestEngine<SpekExecutionContext>() {
         }
     }
 
-    open class SubjectCollector<T>(root: Scope.Group, registry: ExtensionRegistryImpl)
-        : Collector(root, registry), SubjectDsl<T> {
-        var _subject: SubjectImpl<T>? = null
+    open class SubjectCollector<T>(root: Scope.Group, lifecycleManager: LifecycleManager)
+        : Collector(root, lifecycleManager), SubjectDsl<T> {
+        lateinit var _subject: Subject<T>
 
         override fun subject(mode: CachingMode, factory: () -> T): Subject<T> {
-            return extensionRegistry.getExtension(SubjectAdapter::class)!!
-                .registerSubject(mode, root, factory).apply { _subject = this }
+            return SubjectAdapter(mode, factory).apply {
+                _subject = this
+                lifecycleManager.addListener(this)
+            }
         }
 
         override val subject: T
             get() {
-                if (_subject != null) {
-                    return _subject!!.get()
+                try {
+                    return _subject()
+                } catch (e: Throwable) {
+                    throw SpekException("Subject not configured.")
                 }
-                throw SpekException("Subject not configured.")
+
             }
 
         override fun <T, K : SubjectSpek<T>> includeSubjectSpec(spec: KClass<K>) {
             val instance = spec.primaryConstructor!!.call()
-            val nestedRegistry = ExtensionRegistryImpl()
 
-            extensionRegistry.extensions().forEach { nestedRegistry.registerExtension(it) }
-            getSpekExtensions(spec)
-                .forEach { nestedRegistry.registerExtension(it) }
-
-            val scope = Scope.Spec(
+            val scope = Scope.Group(
                 root.uniqueId.append(SPEC_SEGMENT_TYPE, spec.java.name),
-                ClassSource(spec.java), nestedRegistry, spec, true
+                Pending.No, ClassSource(spec.java), false, lifecycleManager, {}
             )
             root.addChild(scope)
-            instance.spec.invoke(NestedSubjectCollector(scope, nestedRegistry, this as SubjectCollector<T>))
+            instance.spec.invoke(
+                NestedSubjectCollector(scope, lifecycleManager, this as SubjectCollector<T>)
+            )
         }
     }
 
-    class NestedSubjectCollector<T>(root: Scope.Group, registry: ExtensionRegistryImpl, val parent: SubjectCollector<T>)
-        : SubjectCollector<T>(root, registry) {
+    class NestedSubjectCollector<T>(root: Scope.Group, lifecycleManager: LifecycleManager,
+                                    val parent: SubjectCollector<T>)
+        : SubjectCollector<T>(root, lifecycleManager) {
         override fun subject(mode: CachingMode, factory: () -> T): Subject<T> {
-            return object: Subject<T> {
-                override fun getValue(ref: Any?, property: KProperty<*>): T {
-                    return parent.subject
-                }
-            }
+            return parent._subject
         }
 
         override val subject: T
@@ -235,21 +240,5 @@ class SpekTestEngine: HierarchicalTestEngine<SpekExecutionContext>() {
 
         // TODO: fix me
         fun getSource(): TestSource? = null
-
-        fun getSpekExtensions(spec: KClass<*>): List<Extension> {
-            return spec.annotations
-                .map {
-                    if (it is SpekExtension) {
-                        it
-                    } else {
-                        it.annotationClass.annotations.find {
-                            it.annotationClass == SpekExtension::class
-                        } as SpekExtension?
-                    }
-
-                }
-                .filter { it != null }
-                .map { it!!.extension.primaryConstructor!!.call() }
-        }
     }
 }
