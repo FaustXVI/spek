@@ -1,4 +1,4 @@
-package org.jetbrains.spek.samples
+package org.jetbrains.samples
 
 open class Calculator {
     fun add(x: Int, y: Int) = x + y

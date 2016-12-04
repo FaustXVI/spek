@@ -94,7 +94,7 @@ class SpekTestEngine: HierarchicalTestEngine<SpekExecutionContext>() {
         val lifecycleManager = LifecycleManager()
 
         val kotlinClass = klass.kotlin
-        val instance = kotlinClass.primaryConstructor!!.call()
+        val instance = kotlinClass.objectInstance ?: kotlinClass.primaryConstructor!!.call()
         val root = Scope.Group(
             engineDescriptor.uniqueId.append(SPEC_SEGMENT_TYPE, klass.name),
             Pending.No,

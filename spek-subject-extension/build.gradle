@@ -14,16 +14,8 @@ junitPlatform {
 
 dependencies {
     compile project(':spek-api')
-    compile project(':spek-subject-extension')
-
     compile 'org.jetbrains.kotlin:kotlin-stdlib'
     compile 'org.jetbrains.kotlin:kotlin-reflect'
-    compileOnly 'org.junit.platform:junit-platform-engine'
-
-    testCompile 'org.junit.jupiter:junit-jupiter-api'
-    testCompile 'org.junit.platform:junit-platform-runner'
-    testCompile project(':junit-platform-engine-test-support')
-    testRuntime 'org.junit.jupiter:junit-jupiter-engine'
 }
 
 task sourceJar(type: Jar) {
