@@ -1,11 +1,13 @@
 package org.jetbrains.spek.engine
 
+import org.jetbrains.spek.api.CreateWith
 import org.jetbrains.spek.api.Spek
 import org.jetbrains.spek.api.SubjectSpek
 import org.jetbrains.spek.api.dsl.Dsl
 import org.jetbrains.spek.api.dsl.Pending
 import org.jetbrains.spek.api.dsl.RootDsl
 import org.jetbrains.spek.api.dsl.SubjectDsl
+import org.jetbrains.spek.api.lifecycle.InstanceFactory
 import org.jetbrains.spek.api.lifecycle.LifecycleListener
 import org.jetbrains.spek.api.memoized.CachingMode
 import org.jetbrains.spek.api.memoized.Subject
@@ -34,6 +36,13 @@ import kotlin.reflect.primaryConstructor
  * @author Ranie Jade Ramiso
  */
 class SpekTestEngine: HierarchicalTestEngine<SpekExecutionContext>() {
+
+    val defaultInstanceFactory = object: InstanceFactory {
+        override fun <T: Spek> create(spek: KClass<T>): T {
+            return spek.objectInstance ?: spek.primaryConstructor!!.call()
+        }
+    }
+
     override fun discover(discoveryRequest: EngineDiscoveryRequest, uniqueId: UniqueId): TestDescriptor {
         val engineDescriptor = SpekEngineDescriptor(uniqueId)
         resolveSpecs(discoveryRequest, engineDescriptor)
@@ -94,7 +103,7 @@ class SpekTestEngine: HierarchicalTestEngine<SpekExecutionContext>() {
         val lifecycleManager = LifecycleManager()
 
         val kotlinClass = klass.kotlin
-        val instance = kotlinClass.objectInstance ?: kotlinClass.primaryConstructor!!.call()
+        val instance = instanceFactoryFor(kotlinClass).create(kotlinClass as KClass<Spek>)
         val root = Scope.Group(
             engineDescriptor.uniqueId.append(SPEC_SEGMENT_TYPE, klass.name),
             Pending.No,
@@ -109,6 +118,14 @@ class SpekTestEngine: HierarchicalTestEngine<SpekExecutionContext>() {
             is Spek -> instance.spec.invoke(Collector(root, lifecycleManager))
         }
 
+    }
+
+    private fun instanceFactoryFor(spek: KClass<*>): InstanceFactory {
+        val factory = spek.annotations.filterIsInstance<CreateWith>()
+            .map { it.factory }
+            .map { it.objectInstance ?: it.primaryConstructor!!.call() }
+            .firstOrNull() ?: defaultInstanceFactory
+        return factory
     }
 
     open class Collector(val root: Scope.Group,
