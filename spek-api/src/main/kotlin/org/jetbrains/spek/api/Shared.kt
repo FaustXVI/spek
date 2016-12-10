@@ -5,6 +5,7 @@ import org.jetbrains.spek.meta.Experimental
 
 /**
  * @author Ranie Jade Ramiso
+ * @since 1.1
  */
 @Experimental
 fun RootDsl.include(spec: Spek) {

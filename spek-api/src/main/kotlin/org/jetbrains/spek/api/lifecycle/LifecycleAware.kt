@@ -5,6 +5,7 @@ import kotlin.properties.ReadOnlyProperty
 
 /**
  * @author Ranie Jade Ramiso
+ * @since 1.1
  */
 @Experimental
 interface LifecycleAware<T>: ReadOnlyProperty<LifecycleAware<T>, T> {
