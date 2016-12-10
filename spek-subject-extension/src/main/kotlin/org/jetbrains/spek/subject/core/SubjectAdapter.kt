@@ -1,5 +1,6 @@
 package org.jetbrains.spek.subject.core
 
+import org.jetbrains.spek.api.lifecycle.ActionScope
 import org.jetbrains.spek.api.lifecycle.GroupScope
 import org.jetbrains.spek.api.lifecycle.LifecycleAware
 import org.jetbrains.spek.api.lifecycle.LifecycleListener
@@ -23,14 +24,20 @@ internal class SubjectAdapter<T>(val mode: CachingMode, val factory: () -> T): L
     }
 
     override fun afterExecuteTest(test: TestScope) {
-        if (!test.parent.lazy && mode == CachingMode.TEST) {
-            cached = null
+        if (test.parent !is ActionScope) {
+            if (mode == CachingMode.TEST) {
+                cached = null
+            }
         }
     }
 
     override fun afterExecuteGroup(group: GroupScope) {
-        if (mode == CachingMode.GROUP || group.lazy) {
+        if (mode == CachingMode.GROUP) {
             cached = null
         }
+    }
+
+    override fun afterExecuteAction(action: ActionScope) {
+        cached = null
     }
 }

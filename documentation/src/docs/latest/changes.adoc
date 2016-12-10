@@ -1,0 +1,10 @@
+== Changelog
+
+Releases::
+    1.1.0:::
+        * Renamed `Dsl` to `SpecBody`.
+        * Added support for extensions.
+        * Reworked subjects as an extension.
+
+    1.0.0:::
+        * Initial release of Spek.

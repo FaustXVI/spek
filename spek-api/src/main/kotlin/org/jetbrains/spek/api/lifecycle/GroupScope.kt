@@ -7,7 +7,4 @@ import org.jetbrains.spek.meta.Experimental
  * @since 1.1
  */
 @Experimental
-interface GroupScope: Scope {
-    val parent: GroupScope?
-    val lazy: Boolean
-}
+interface GroupScope: Scope

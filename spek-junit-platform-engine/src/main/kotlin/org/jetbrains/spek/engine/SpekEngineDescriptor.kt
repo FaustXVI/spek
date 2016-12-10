@@ -11,6 +11,4 @@ import org.junit.platform.engine.support.hierarchical.Node
 class SpekEngineDescriptor(uniqueId: UniqueId)
     : EngineDescriptor(uniqueId, "Spek"), Node<SpekExecutionContext>, GroupScope {
     override val parent = null
-
-    override val lazy: Boolean = false
 }

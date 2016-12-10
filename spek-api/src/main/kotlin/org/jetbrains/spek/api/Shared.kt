@@ -1,6 +1,6 @@
 package org.jetbrains.spek.api
 
-import org.jetbrains.spek.api.dsl.RootDsl
+import org.jetbrains.spek.api.dsl.Spec
 import org.jetbrains.spek.meta.Experimental
 
 /**
@@ -8,6 +8,6 @@ import org.jetbrains.spek.meta.Experimental
  * @since 1.1
  */
 @Experimental
-fun RootDsl.include(spec: Spek) {
+fun Spec.include(spec: Spek) {
     spec.spec(this)
 }

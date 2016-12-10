@@ -8,6 +8,6 @@ import org.jetbrains.spek.meta.Experimental
  * @since 1.1
  */
 @Experimental
-interface RootDsl: Dsl {
+interface Spec: SpecBody {
     fun registerListener(listener: LifecycleListener)
 }

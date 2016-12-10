@@ -12,4 +12,6 @@ interface LifecycleListener {
     fun afterExecuteTest(test: TestScope) { }
     fun beforeExecuteGroup(group: GroupScope) { }
     fun afterExecuteGroup(group: GroupScope) { }
+    fun beforeExecuteAction(action: ActionScope) { }
+    fun afterExecuteAction(action: ActionScope) { }
 }

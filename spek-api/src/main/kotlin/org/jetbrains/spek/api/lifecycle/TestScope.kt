@@ -8,5 +8,5 @@ import org.jetbrains.spek.meta.Experimental
  */
 @Experimental
 interface TestScope: Scope {
-    val parent: GroupScope
+    override val parent: GroupScope
 }

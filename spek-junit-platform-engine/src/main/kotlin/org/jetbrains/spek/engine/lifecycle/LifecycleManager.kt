@@ -1,5 +1,6 @@
 package org.jetbrains.spek.engine.lifecycle
 
+import org.jetbrains.spek.api.lifecycle.ActionScope
 import org.jetbrains.spek.api.lifecycle.GroupScope
 import org.jetbrains.spek.api.lifecycle.LifecycleListener
 import org.jetbrains.spek.api.lifecycle.TestScope
@@ -33,5 +34,13 @@ class LifecycleManager {
 
     fun afterExecuteGroup(group: GroupScope) {
         listeners.forEach { it.afterExecuteGroup(group) }
+    }
+
+    fun beforeExecuteAction(action: ActionScope) {
+        listeners.forEach { it.beforeExecuteAction(action) }
+    }
+
+    fun afterExecuteAction(action: ActionScope) {
+        listeners.forEach { it.afterExecuteAction(action) }
     }
 }

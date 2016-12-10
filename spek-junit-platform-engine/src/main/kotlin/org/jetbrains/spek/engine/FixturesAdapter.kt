@@ -1,5 +1,6 @@
 package org.jetbrains.spek.engine
 
+import org.jetbrains.spek.api.lifecycle.ActionScope
 import org.jetbrains.spek.api.lifecycle.GroupScope
 import org.jetbrains.spek.api.lifecycle.LifecycleListener
 import org.jetbrains.spek.api.lifecycle.TestScope
@@ -16,28 +17,25 @@ class FixturesAdapter: LifecycleListener {
     private val afterEach: MutableMap<GroupScope, MutableList<() -> Unit>> = WeakHashMap()
 
     override fun beforeExecuteTest(test: TestScope) {
-        if (!test.parent.lazy) {
+        if (test.parent !is ActionScope) {
             invokeAllBeforeEach(test.parent)
         }
     }
 
     override fun afterExecuteTest(test: TestScope) {
-        if (!test.parent.lazy) {
+        if (test.parent !is ActionScope) {
             invokeAllAfterEach(test.parent)
         }
     }
 
-    override fun beforeExecuteGroup(group: GroupScope) {
-        if (group.lazy) {
-            invokeAllBeforeEach(group)
-        }
+    override fun beforeExecuteAction(action: ActionScope) {
+        invokeAllBeforeEach(action)
     }
 
-    override fun afterExecuteGroup(group: GroupScope) {
-        if (group.lazy) {
-            invokeAllAfterEach(group)
-        }
+    override fun afterExecuteAction(action: ActionScope) {
+        invokeAllAfterEach(action)
     }
+
 
     fun registerBeforeEach(group: GroupScope, callback: () -> Unit) {
         beforeEach.getOrPut(group, { LinkedList() }).add(callback)

@@ -7,4 +7,6 @@ import org.jetbrains.spek.meta.Experimental
  * @since 1.1
  */
 @Experimental
-interface Scope
+interface Scope {
+    val parent: GroupScope?
+}

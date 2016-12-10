@@ -1,7 +1,7 @@
 package org.jetbrains.spek.subject
 
 import org.jetbrains.spek.api.Spek
-import org.jetbrains.spek.api.dsl.RootDsl
+import org.jetbrains.spek.api.dsl.Spec
 import org.jetbrains.spek.api.include
 import org.jetbrains.spek.api.lifecycle.LifecycleAware
 import org.jetbrains.spek.meta.Experimental
@@ -12,7 +12,7 @@ import kotlin.reflect.KProperty
 @Experimental
 infix fun <T, K: T> SubjectDsl<K>.itBehavesLike(spec: SubjectSpek<T>) {
     include(Spek.wrap {
-        val value: SubjectProviderDsl<T> = object: SubjectProviderDsl<T>, RootDsl by this {
+        val value: SubjectProviderDsl<T> = object: SubjectProviderDsl<T>, Spec by this {
             val adapter = object: LifecycleAware<T> {
                 override fun getValue(thisRef: LifecycleAware<T>, property: KProperty<*>): T {
                     return this()
