@@ -3,6 +3,7 @@ package org.jetbrains.spek.subject
 import org.jetbrains.spek.api.Spek
 import org.jetbrains.spek.api.dsl.Spec
 import org.jetbrains.spek.api.include
+import org.jetbrains.spek.api.lifecycle.CachingMode
 import org.jetbrains.spek.api.lifecycle.LifecycleAware
 import org.jetbrains.spek.meta.Experimental
 import org.jetbrains.spek.subject.dsl.SubjectDsl

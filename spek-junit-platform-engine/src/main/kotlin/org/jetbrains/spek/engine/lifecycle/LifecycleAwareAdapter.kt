@@ -1,17 +1,17 @@
-package org.jetbrains.spek.subject.core
+package org.jetbrains.spek.engine.lifecycle
 
 import org.jetbrains.spek.api.lifecycle.ActionScope
+import org.jetbrains.spek.api.lifecycle.CachingMode
 import org.jetbrains.spek.api.lifecycle.GroupScope
 import org.jetbrains.spek.api.lifecycle.LifecycleAware
 import org.jetbrains.spek.api.lifecycle.LifecycleListener
 import org.jetbrains.spek.api.lifecycle.TestScope
-import org.jetbrains.spek.subject.CachingMode
 import kotlin.reflect.KProperty
 
 /**
  * @author Ranie Jade Ramiso
  */
-internal class SubjectAdapter<T>(val mode: CachingMode, val factory: () -> T): LifecycleAware<T>, LifecycleListener {
+class LifecycleAwareAdapter<T>(val mode: CachingMode, val factory: () -> T): LifecycleAware<T>, LifecycleListener {
     var cached: T? = null
 
     override fun getValue(thisRef: LifecycleAware<T>, property: KProperty<*>) = invoke()

@@ -1,9 +1,9 @@
-package org.jetbrains.spek.subject
+package org.jetbrains.spek.api.lifecycle
 
 import org.jetbrains.spek.meta.Experimental
 
 /**
- * Specifies how [subjects][Subject] are cached.
+ * Specifies how [lifecycle aware objects][LifecycleAware] are cached.
  *
  * @author Ranie Jade Ramiso
  */

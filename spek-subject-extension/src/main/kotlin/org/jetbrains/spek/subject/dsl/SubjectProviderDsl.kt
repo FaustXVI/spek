@@ -1,8 +1,8 @@
 package org.jetbrains.spek.subject.dsl
 
+import org.jetbrains.spek.api.lifecycle.CachingMode
 import org.jetbrains.spek.api.lifecycle.LifecycleAware
 import org.jetbrains.spek.meta.Experimental
-import org.jetbrains.spek.subject.CachingMode
 
 /**
  * @author Ranie Jade Ramiso

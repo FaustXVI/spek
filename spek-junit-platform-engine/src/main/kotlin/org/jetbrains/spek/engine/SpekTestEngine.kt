@@ -7,8 +7,11 @@ import org.jetbrains.spek.api.dsl.Pending
 import org.jetbrains.spek.api.dsl.Spec
 import org.jetbrains.spek.api.dsl.SpecBody
 import org.jetbrains.spek.api.dsl.TestBody
+import org.jetbrains.spek.api.lifecycle.CachingMode
 import org.jetbrains.spek.api.lifecycle.InstanceFactory
+import org.jetbrains.spek.api.lifecycle.LifecycleAware
 import org.jetbrains.spek.api.lifecycle.LifecycleListener
+import org.jetbrains.spek.engine.lifecycle.LifecycleAwareAdapter
 import org.jetbrains.spek.engine.lifecycle.LifecycleManager
 import org.junit.platform.commons.util.ReflectionUtils
 import org.junit.platform.engine.EngineDiscoveryRequest
@@ -122,9 +125,14 @@ class SpekTestEngine: HierarchicalTestEngine<SpekExecutionContext>() {
 
     open class Collector(val root: Scope.Group,
                          val lifecycleManager: LifecycleManager): Spec {
-
         val fixtures = FixturesAdapter().apply {
             lifecycleManager.addListener(this)
+        }
+
+        override fun <T> memoized(mode: CachingMode, factory: () -> T): LifecycleAware<T> {
+            return LifecycleAwareAdapter(mode, factory).apply {
+                registerListener(this)
+            }
         }
 
         override fun registerListener(listener: LifecycleListener) {
@@ -183,9 +191,9 @@ class SpekTestEngine: HierarchicalTestEngine<SpekExecutionContext>() {
     }
 
     companion object {
-        const val SPEC_SEGMENT_TYPE = "spec";
-        const val GROUP_SEGMENT_TYPE = "group";
-        const val TEST_SEGMENT_TYPE = "test";
+        const val SPEC_SEGMENT_TYPE = "spec"
+        const val GROUP_SEGMENT_TYPE = "group"
+        const val TEST_SEGMENT_TYPE = "test"
 
         // TODO: fix me
         fun getSource(): TestSource? = null

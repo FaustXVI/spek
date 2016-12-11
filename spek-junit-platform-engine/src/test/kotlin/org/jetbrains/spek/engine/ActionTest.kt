@@ -11,7 +11,7 @@ import org.junit.jupiter.api.Test
 /**
  * @author Ranie Jade Ramiso
  */
-class LazyGroupTest: AbstractSpekTestEngineTest() {
+class ActionTest: AbstractSpekTestEngineTest() {
     @Test
     fun testOn() {
         class TestSpek: Spek({
