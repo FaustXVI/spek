@@ -10,7 +10,7 @@ import org.jetbrains.spek.meta.Experimental
 @Experimental
 enum class CachingMode {
     /**
-     * Subjects will be shared throughout the group which it was declared.
+     * Instance will be shared within the group it was declared.
      */
     GROUP,
     /**

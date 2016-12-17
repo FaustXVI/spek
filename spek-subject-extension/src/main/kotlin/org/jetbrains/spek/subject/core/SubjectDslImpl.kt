@@ -6,4 +6,4 @@ import org.jetbrains.spek.subject.dsl.SubjectDsl
 /**
  * @author Ranie Jade Ramiso
  */
-abstract class SubjectDslImpl<T>(val root: Spec): SubjectDsl<T>, Spec by root
+internal abstract class SubjectDslImpl<T>(val root: Spec): SubjectDsl<T>, Spec by root

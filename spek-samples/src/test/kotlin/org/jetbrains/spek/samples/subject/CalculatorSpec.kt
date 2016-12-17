@@ -9,7 +9,6 @@ import org.jetbrains.samples.Calculator
 import org.jetbrains.spek.subject.SubjectSpek
 import kotlin.test.assertEquals
 
-
 object CalculatorSpec: SubjectSpek<Calculator>({
     subject { Calculator() }
 

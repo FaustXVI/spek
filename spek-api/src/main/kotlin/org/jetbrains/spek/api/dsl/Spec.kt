@@ -1,7 +1,5 @@
 package org.jetbrains.spek.api.dsl
 
-import org.jetbrains.spek.api.lifecycle.CachingMode
-import org.jetbrains.spek.api.lifecycle.LifecycleAware
 import org.jetbrains.spek.api.lifecycle.LifecycleListener
 import org.jetbrains.spek.meta.Experimental
 
@@ -12,5 +10,4 @@ import org.jetbrains.spek.meta.Experimental
 @Experimental
 interface Spec: SpecBody {
     fun registerListener(listener: LifecycleListener)
-    fun <T> memoized(mode: CachingMode = CachingMode.TEST, factory: () -> T): LifecycleAware<T>
 }
